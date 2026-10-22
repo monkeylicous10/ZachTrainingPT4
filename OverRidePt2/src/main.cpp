@@ -77,6 +77,9 @@ void tare() {
 void initialize() {
     pros::lcd::initialize();
     pros::lcd::set_text(1, "Hello PROS User!");
+    while (imu.is_calibrating()) {
+        pros::delay(10);
+    }
     imu.reset();
     pros::lcd::register_btn1_cb(on_center_button);
 }
@@ -227,7 +230,7 @@ void autonomous() {
     liftgoal = 20;
     drive(12);
     turn(-90);
-    drive(20);
+    drive(12.5);
     lift.move(-20);
     pros::delay(1000);
     liftgoal = 0;
