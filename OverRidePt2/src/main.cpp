@@ -102,7 +102,7 @@ float rtd(float angle) {
     return angle * (180/M_PI);
 }
 
-void drive(float goal, float power = 100, float timeout = 5000) {
+void drive(float goal, float power = 100, float timeout = 5000,float tolerance = .5) {
     float error = goal,prevError = goal,derivative{}, integral{},time{},current{},complete{};
     tare();
     while(1) {
@@ -117,7 +117,7 @@ void drive(float goal, float power = 100, float timeout = 5000) {
     float move = error * dkP + integral * dkI + derivative  * dkD;
     RMG.move(move * (power/100));
     LMG.move(move * (power/100));
-    if (fabs(error) < .5) {
+    if (fabs(error) < tolerance) {
         complete ++;
     }
     else complete = 0;
@@ -134,7 +134,7 @@ void drive(float goal, float power = 100, float timeout = 5000) {
     LMG.move(0);
 }
 
-void turn(float goal, float power = 100, float timeout = 3000) {
+void turn(float goal, float power = 100, float timeout = 3000, float tolerance = 1) {
     float error = goal,prevError = goal,derivative{}, integral{},time{},current{},complete{};
     tare();
     while(1) {
@@ -149,7 +149,7 @@ void turn(float goal, float power = 100, float timeout = 3000) {
     float move = error * turnkP + integral * turnkI + derivative  * turnkD;
     RMG.move(-move * (power/100));
     LMG.move(move * (power/100));
-    if (fabs(error) < 1) {
+    if (fabs(error) < tolerance) {
         complete ++;
     }
     else complete = 0;
@@ -261,21 +261,23 @@ void rightSideAuto1point() {
 
 void endonmatchload() {
     liftgoal = 20;
-    drive(12);
+    drive(12,100,9000);
     turn(90,100,1300);
-    drive(9.75);
+    drive(8.5,100,5000,.25);
     lift.move(-30);
     pros::delay(600);
     claw.toggle();
     pros::delay(600);
     drive(-6,150,1500);
-    turn(14,100,1000);
+    turn(28,100,2000,.125);
     liftgoal = 0;
-    drive(18,50,6000);
+    drive(10,100,6000);
+    drive(9.5,30,3000);
     claw.toggle();
     pros::delay(400);
+    liftgoal = 50;
     turn(170);
-    drive(18);
+    drive(12,50,3000,.5);
     lift.move(-20);
     claw.toggle();
     pros::delay(400);
