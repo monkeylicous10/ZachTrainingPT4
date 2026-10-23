@@ -125,7 +125,6 @@ void drive(float goal, float power = 100, float timeout = 5000) {
     time += 20;
     if (time >= timeout) break;
     prevError = error;
-    roller.clear();
     roller.print(2,0,"dis %.2f",getAvInches());
     roller.print(3,0,"error %.2f",error);
     lift.move(liftPID(liftgoal));
@@ -226,7 +225,7 @@ void disabled() {}
 
 void competition_initialize() {}
 
-void autonomous() {
+void leftSideAuto1point() {
     liftgoal = 20;
     drive(12);
     turn(-90);
@@ -241,6 +240,52 @@ void autonomous() {
     drive(12);
     turn(-90);
     drive(16);
+}
+
+void rightSideAuto1point() {
+    liftgoal = 20;
+    drive(12);
+    turn(90);
+    drive(12.5);
+    lift.move(-20);
+    pros::delay(1000);
+    liftgoal = 0;
+    claw.toggle();
+    pros::delay(100);
+    drive(-6);
+    turn(150);
+    drive(12);
+    turn(90);
+    drive(16);
+}
+
+void endonmatchload() {
+    liftgoal = 20;
+    drive(12);
+    turn(90,100,1300);
+    drive(9.75);
+    lift.move(-30);
+    pros::delay(600);
+    claw.toggle();
+    pros::delay(600);
+    drive(-6,150,1500);
+    turn(14,100,1000);
+    liftgoal = 0;
+    drive(18,50,6000);
+    claw.toggle();
+    pros::delay(400);
+    turn(170);
+    drive(18);
+    lift.move(-20);
+    claw.toggle();
+    pros::delay(400);
+    drive(-2,300,700);
+    turn(150);
+    drive(20);
+}
+
+void autonomous() {
+    endonmatchload();
 }
 
 float curve(float input, float expo = 1.88) {
