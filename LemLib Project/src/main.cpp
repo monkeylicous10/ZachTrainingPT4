@@ -17,10 +17,7 @@ pros::Imu imu (14);
 pros::Distance paul (10);
 
 lemlib::TrackingWheel lHori(&hori, lemlib::Omniwheel::NEW_2, -5.75);
-// vertical tracking wheel. 2.75" diameter, 2.5" offset, left of the robot (negative)
 lemlib::TrackingWheel lVert(&vert, lemlib::Omniwheel::NEW_2, -2.5);
-
-
 
 lemlib::Drivetrain driveTrain(&lmg,&rmg,10,lemlib::Omniwheel::NEW_325,450,2);
 
@@ -29,7 +26,7 @@ lemlib::ControllerSettings turn(2,0,2,3,.5,3000,1,5000,10);
 
 lemlib::OdomSensors sensors(&lHori, nullptr,&lVert,nullptr,&imu);
 
-lemlib::Chassis chassis(driveTrain, straight, turn, sensors);
+lemlib::Chassis rob(driveTrain, straight, turn, sensors);
 
 void on_center_button() {
 	static bool pressed = false;
@@ -44,7 +41,7 @@ void on_center_button() {
 void initialize() {
 	pros::lcd::initialize();
 	pros::lcd::set_text(1, "Hello PROS User!");
-	chassis.calibrate();
+	rob.calibrate();
 	pros::lcd::register_btn1_cb(on_center_button);
 }
 
@@ -54,4 +51,15 @@ void competition_initialize() {}
 
 void autonomous() {}
 
-void opcontrol() {}
+float curve(float input, float expo = 1.88) {
+    float y = std::copysign(1,input);
+    return std::pow(fabs(input/127.0f),expo) * y * 127.0f;
+}
+
+void opcontrol() {
+	while(1) {
+	rmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y)));
+	lmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)));
+	pros::delay(20);
+	}
+}
