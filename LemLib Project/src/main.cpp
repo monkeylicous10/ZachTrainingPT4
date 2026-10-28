@@ -16,8 +16,8 @@ pros::Rotation vert (15);
 pros::Imu imu (14);
 pros::Distance paul (10);
 
-lemlib::TrackingWheel lHori(&hori, lemlib::Omniwheel::NEW_2, -5.75);
-lemlib::TrackingWheel lVert(&vert, lemlib::Omniwheel::NEW_2, -2.5);
+lemlib::TrackingWheel lHori(&hori, lemlib::Omniwheel::NEW_2, sqrt(3.94));
+lemlib::TrackingWheel lVert(&vert, lemlib::Omniwheel::NEW_2, sqrt(12.89));
 
 lemlib::Drivetrain driveTrain(&lmg,&rmg,10,lemlib::Omniwheel::NEW_325,450,2);
 
@@ -26,7 +26,7 @@ lemlib::ControllerSettings turn(2,0,2,3,.5,3000,1,5000,10);
 
 lemlib::OdomSensors sensors(&lHori, nullptr,&lVert,nullptr,&imu);
 
-lemlib::Chassis rob(driveTrain, straight, turn, sensors);
+lemlib::Chassis rob (driveTrain, straight, turn, sensors);
 
 void on_center_button() {
 	static bool pressed = false;
@@ -40,9 +40,18 @@ void on_center_button() {
 
 void initialize() {
 	pros::lcd::initialize();
-	pros::lcd::set_text(1, "Hello PROS User!");
 	rob.calibrate();
 	pros::lcd::register_btn1_cb(on_center_button);
+	pros::Task screen_task([&]() {
+        while (true) {
+            // print robot location to the brain screen
+            pros::lcd::print(0, "X: %f", rob.getPose().x); // x
+            pros::lcd::print(1, "Y: %f", rob.getPose().y); // y
+            pros::lcd::print(2, "Theta: %f", rob.getPose().theta); // heading
+            // delay to save resources
+            pros::delay(20);
+        }
+    });
 }
 
 void disabled() {}
