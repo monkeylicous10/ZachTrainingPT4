@@ -36,12 +36,12 @@ float vertdis = sqrt(12.89);
 //PID DRIVE CONST
 constexpr float dkP = 13;
 constexpr float dkI = .0f;
-constexpr float dkD = 3;
+constexpr float dkD = 60;
 
 //PID TURNING CONST
 constexpr float turnkP = .865;
-constexpr float turnkI = .1;
-constexpr float turnkD = 1;
+constexpr float turnkI = .005;
+constexpr float turnkD = 20;
 
 //POS
 float x{},y{};
@@ -123,7 +123,7 @@ void drive(float goal, float power = 100, float timeout = 5000,float tolerance =
         }
         else if (fabs(error) < .5 || fabs(error) > 5) integral = 0;
     
-    derivative = -(prevError - error);
+    derivative = -(prevError - error)/20;
     float move = error * dkP + integral * dkI + derivative  * dkD;
     rmg.move(move * (power/100));
     lmg.move(move * (power/100));
