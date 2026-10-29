@@ -26,6 +26,16 @@ lemlib::OdomSensors sensors(&lVert, nullptr,&lHori,nullptr,&imu);
 
 lemlib::Chassis rob (driveTrain, straight, turn, sensors);
 
+
+float errora{},prevErrora{},integrala{},derivativea{},currenta = lift.get_position();
+float liftPIDDR (float goal) {
+    errora = (goal) - currenta;
+    currenta = lift.get_position();
+    integrala += errora;
+    derivativea = errora - prevErrora;
+    prevErrora = errora;
+    return std::clamp(errora * .5f + derivativea * .0f + integrala * .0f,-127.0f,127.0f);
+}
 void on_center_button() {
 	static bool pressed = false;
 	pressed = !pressed;
@@ -82,9 +92,37 @@ float curve(float input, float expo = 1.88) {
     float y = std::copysign(1,input);
     return std::pow(fabs(input/127.0f),expo) * y * 127.0f;
 }
-
 void opcontrol() {
+float place{};
 	while(1) {
+		if (roller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
+            claw.toggle();
+        }
+        if (roller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+            tilt.toggle();
+        }
+        if (roller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && claw.is_extended()) { ///1400 is the point whwre the motor is at the highest point
+            lift.move(127);
+        }
+        else if (roller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !claw.is_extended()) {
+            lift.move(100);
+        }
+        if (roller.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && claw.is_extended()) {
+            lift.move(-50);
+        }
+        else if (roller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
+            lift.move(-30);
+        }
+        if (roller.get_digital_new_release(pros::E_CONTROLLER_DIGITAL_L1) || roller.get_digital_new_release(pros::E_CONTROLLER_DIGITAL_R1)) {
+            place = lift.get_position();
+        }
+        if (!roller.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && !roller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
+            lift.move(liftPIDDR(place));
+        }
+        
+        if ((fabs(imu.get_roll()) > 25)) {
+            lift.move(-60);
+        }
 	rmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y)) + antitip());
 	lmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)) + antitip());
 	pros::delay(20);
