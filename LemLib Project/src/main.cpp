@@ -64,6 +64,19 @@ void autonomous() {
 	rob.moveToPoint(12, 12, 3000);
 	rob.follow(myEx_txt,12,10000,true,true);
 }
+float errorb{},integralb{},derivativeb{},prevErrorb{};
+float antitip() {
+	if (fabs(integralb) < 20) {
+	errorb = -imu.get_roll();
+	integralb += errorb;
+	}
+	else integralb = 0;
+	derivativeb = errorb-prevErrorb;
+	if (fabs(errorb) > 20) {
+	return errorb * .5 + integralb * 0 + derivativeb * 0;
+	}
+	else return 0;
+}
 
 float curve(float input, float expo = 1.88) {
     float y = std::copysign(1,input);
@@ -72,9 +85,8 @@ float curve(float input, float expo = 1.88) {
 
 void opcontrol() {
 	while(1) {
-
-	rmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y)));
-	lmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)));
+	rmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y)) + antitip());
+	lmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)) + antitip());
 	pros::delay(20);
 	}
 }
