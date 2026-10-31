@@ -2,6 +2,7 @@
 #include "lemlib/chassis/chassis.hpp"
 #include "pros/abstract_motor.hpp"
 #include "pros/misc.h"
+#include "pros/motors.h"
 
 pros::Controller roller (pros::E_CONTROLLER_MASTER);
 
@@ -29,7 +30,8 @@ lemlib::TrackingWheel lVert(&vert, lemlib::Omniwheel::NEW_2, sqrt(12.89));
 
 lemlib::Drivetrain driveTrain(&lmg,&rmg,13,lemlib::Omniwheel::NEW_325,450,2);
 
-lemlib::ControllerSettings straight(3,0.1,3,4,0,0,0,0,0);
+lemlib::ControllerSettings straight(12,0,18,4,.5,
+    100,2,500,0);
 
 lemlib::ControllerSettings turn(5,0,45,3,1,100,3,500,0);
 
@@ -38,6 +40,8 @@ lemlib::OdomSensors sensors(&lVert, nullptr,&lHori,nullptr,&imu);
 lemlib::Chassis rob (driveTrain, straight, turn, sensors);
 
 
+
+float liftgoal{};
 float errora{},prevErrora{},integrala{},derivativea{},currenta = lift.get_position();
 float liftPIDDR (float goal) {
     errora = (goal) - currenta;
@@ -61,6 +65,10 @@ void initialize() {
 	pros::lcd::initialize();
 	rob.calibrate();
 	pros::lcd::register_btn1_cb(on_center_button);
+    while(1) {
+        lift.move((liftgoal - lift.get_position()) * .5);
+        pros::delay(20);
+    }
 }
 
 void disabled() {}
@@ -69,10 +77,20 @@ void competition_initialize() {}
 
 
 void autonomous() {
+    liftgoal = 700;
+    rob.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
 	rob.setPose(0,0,0);
-    rob.moveToPoint(0,48,10000,{},false);
+    rob.moveToPose(36,36,90,10000,{.maxSpeed = 70,.minSpeed = 30}, false);
     roller.rumble("..");
-    roller.print(0,0,"y %.2f",rob.getPose().y);
+    pros::delay(1000000);
+    rob.turnToPoint(12, 12,750);
+    rob.moveToPoint(12,12,10000,{.maxSpeed = 70,.minSpeed = 30},false);
+    roller.rumble("..");
+    rob.moveToPoint(0,0,1000,{.forwards = false,.maxSpeed = 70,.minSpeed = 30},false);
+    rob.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    rmg.move(0);
+    lmg.move(0);
+    roller.print(0,0,"y %.2f x %.2f",rob.getPose().y,rob.getPose().x);
 }
 float errorb{},integralb{},derivativeb{},prevErrorb{};
 float antitip() {
@@ -101,7 +119,7 @@ float place{};
         if (roller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
             tilt.toggle();
         }
-        if (roller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && claw.is_extended()) { ///1400 is the point whwre the motor is at the highest point
+        if (roller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && claw.is_extended()) {
             lift.move(127);
         }
         else if (roller.get_digital(pros::E_CONTROLLER_DIGITAL_R1) && !claw.is_extended()) {
@@ -115,6 +133,7 @@ float place{};
         }
         if (roller.get_digital_new_release(pros::E_CONTROLLER_DIGITAL_L1) || roller.get_digital_new_release(pros::E_CONTROLLER_DIGITAL_R1)) {
             place = lift.get_position();
+            integrala = 0;
         }
         if (!roller.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && !roller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
             lift.move(liftPIDDR(place));
@@ -122,11 +141,10 @@ float place{};
         if ((fabs(imu.get_roll()) > 10)) {
             lift.move(-60);
         }
-            pros::lcd::print(0, "X: %f", rob.getPose().x);
-            pros::lcd::print(1, "Y: %f", rob.getPose().y);
-            pros::lcd::print(2, "Theta: %f", rob.getPose().theta);
-            pros::delay(20);
-        
+        pros::lcd::print(0, "X: %f", rob.getPose().x);
+        pros::lcd::print(1, "Y: %f", rob.getPose().y);
+        pros::lcd::print(2, "Theta: %f", rob.getPose().theta);
+        pros::delay(20);
 	rmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y)) + antitip());
 	lmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)) + antitip());
 	pros::delay(20);
