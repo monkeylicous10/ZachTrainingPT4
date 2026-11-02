@@ -3,6 +3,7 @@
 #include "pros/abstract_motor.hpp"
 #include "pros/misc.h"
 #include "pros/motors.h"
+#include <sys/types.h>
 
 pros::Controller roller (pros::E_CONTROLLER_MASTER);
 
@@ -40,7 +41,26 @@ lemlib::OdomSensors sensors(&lVert, nullptr,&lHori,nullptr,&imu);
 lemlib::Chassis rob (driveTrain, straight, turn, sensors);
 
 
+float wrapAngle(float angle) {
+    while (angle < -180) angle += 360;
+    while (angle > 180) angle -= 360;
+    return angle;
+}
+float getLeftInches() {
+    return lmg.get_position()/450 * (M_PI * 3.25);
+}
 
+float getRightInches() {
+    return rmg.get_position()/450 * (M_PI * 3.25);
+}
+
+float getAvInches() {
+    return (getLeftInches() + getRightInches())/2;
+}
+void tare() {
+    rmg.tare_position();
+    lmg.tare_position();
+}
 float liftgoal{};
 float errora{},prevErrora{},integrala{},derivativea{},currenta = lift.get_position();
 float liftPIDDR (float goal) {
@@ -50,6 +70,37 @@ float liftPIDDR (float goal) {
     derivativea = errora - prevErrora;
     prevErrora = errora;
     return std::clamp(errora * .5f + derivativea * .0f + integrala * .0f,-127.0f,127.0f);
+}
+void driveToHeading(float dis, float angle, float power = 100, float timeout = 6000) {
+    tare();
+    float dcurrent = getAvInches(),tcurrent = imu.get_heading(),derror = dis, terror = angle,dprevError = dis, tprevError = angle,dderivative{}, tderivative{},dintegral{},tintegral{},time{},complete{};
+    while(1) {
+        dcurrent = getAvInches();
+        tcurrent = imu.get_heading();
+        derror = dis - dcurrent;
+        if (derror < 5) dintegral += derror;
+        if (derror > 5 || dintegral < .5) dintegral = 0;
+        dderivative = dprevError - derror;
+        float drive = derror * 13 + dintegral * 0 + dderivative * 1.2;
+        terror = wrapAngle(angle - tcurrent);
+        if (terror < 15) tintegral += terror;
+        if (terror > 15 || terror < 3) tintegral = 0;
+        tderivative = tprevError - terror;
+        float turn = terror * .865 + tintegral * 0 + tderivative * .4;
+        rmg.move((drive-turn)*(power/100));
+        lmg.move((drive+turn)*(power/100));
+        if (terror < 5 && derror < 2) complete ++;
+        else complete = 0;
+        if (complete == 20) break;
+        time += 20;
+        if (time >= timeout) break;
+        tprevError = terror;
+        dprevError = derror;
+        lift.move(liftPIDDR(liftgoal));
+        pros::delay(20);
+    }
+    lmg.move(0);
+    rmg.move(0);
 }
 void on_center_button() {
 	static bool pressed = false;
@@ -65,32 +116,25 @@ void initialize() {
 	pros::lcd::initialize();
 	rob.calibrate();
 	pros::lcd::register_btn1_cb(on_center_button);
-    while(1) {
-        lift.move((liftgoal - lift.get_position()) * .5);
-        pros::delay(20);
-    }
 }
 
 void disabled() {}
 
 void competition_initialize() {}
+float turnplace{};
 
-
-void autonomous() {
+void autonomous() { //use 35 for turning to look for something
     liftgoal = 700;
     rob.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-	rob.setPose(0,0,0);
-    rob.moveToPose(36,36,90,10000,{.maxSpeed = 70,.minSpeed = 30}, false);
-    roller.rumble("..");
-    pros::delay(1000000);
-    rob.turnToPoint(12, 12,750);
-    rob.moveToPoint(12,12,10000,{.maxSpeed = 70,.minSpeed = 30},false);
-    roller.rumble("..");
-    rob.moveToPoint(0,0,1000,{.forwards = false,.maxSpeed = 70,.minSpeed = 30},false);
-    rob.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    rmg.move(0);
-    lmg.move(0);
-    roller.print(0,0,"y %.2f x %.2f",rob.getPose().y,rob.getPose().x);
+    rob.turnToHeading(-135,1200,{.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE, .maxSpeed = 45}, true);
+    while (rob.isInMotion()) {
+        if (paul.get_distance() < 600) {
+            turnplace = imu.get_heading();
+            rob.cancelMotion();
+        }
+    }
+    driveToHeading(4, turnplace);
+    roller.print(0,0,"id %.2f", turnplace);
 }
 float errorb{},integralb{},derivativeb{},prevErrorb{};
 float antitip() {
@@ -112,6 +156,8 @@ float curve(float input, float expo = 1.88) {
 }
 void opcontrol() {
 float place{};
+lift.set_brake_mode(pros::MotorBrake::hold);
+rob.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
 	while(1) {
 		if (roller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_B)) {
             claw.toggle();
