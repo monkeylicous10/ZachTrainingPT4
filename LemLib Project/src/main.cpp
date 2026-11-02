@@ -34,12 +34,21 @@ lemlib::Drivetrain driveTrain(&lmg,&rmg,13,lemlib::Omniwheel::NEW_325,450,2);
 lemlib::ControllerSettings straight(12,0,18,4,.5,
     100,2,500,0);
 
-lemlib::ControllerSettings turn(5,0,45,3,1,100,3,500,0);
+lemlib::ControllerSettings turnP(5,0,45,3,1,100,3,500,0);
 
 lemlib::OdomSensors sensors(&lVert, nullptr,&lHori,nullptr,&imu);
 
-lemlib::Chassis rob (driveTrain, straight, turn, sensors);
+lemlib::Chassis rob (driveTrain, straight, turnP, sensors);
 
+//PID DRIVE CONST
+constexpr float dkP = 13;
+constexpr float dkI = .0f;
+constexpr float dkD = 1.2;
+
+//PID TURNING CONST
+constexpr float turnkP = .865;
+constexpr float turnkI = .0;
+constexpr float turnkD = .4;
 
 float wrapAngle(float angle) {
     while (angle < -180) angle += 360;
@@ -70,6 +79,94 @@ float liftPIDDR (float goal) {
     derivativea = errora - prevErrora;
     prevErrora = errora;
     return std::clamp(errora * .5f + derivativea * .0f + integrala * .0f,-127.0f,127.0f);
+}
+void drive(float goal, float power = 100, float timeout = 5000,float tolerance = .5) {
+    float error = goal,prevError = goal,derivative{}, integral{},time{},current{},complete{};
+    tare();
+    while(1) {
+        current = getAvInches();
+        error = goal - current;
+        if (fabs(error) < 5) {
+            integral += error;
+        }
+        else if (fabs(error) < .5 || fabs(error) > 5) integral = 0;
+    
+    derivative = -(prevError - error)/20;
+    float move = error * dkP + integral * dkI + derivative  * dkD;
+    rmg.move(move * (power/100));
+    lmg.move(move * (power/100));
+    if (fabs(error) < tolerance) {
+        complete ++;
+    }
+    else complete = 0;
+    if (complete == 10) break;
+    time += 20;
+    if (time >= timeout) break;
+    prevError = error;
+    lift.move(liftPIDDR(liftgoal));
+    pros::delay(20);
+    }
+    rmg.move(0);
+    lmg.move(0);
+}
+float turnplace{};
+void turn(float goal, float power = 100, float timeout = 3000, float tolerance = .5) {
+    float error = goal,prevError = goal,derivative{}, integral{},time{},current{},complete{};
+    tare();
+    while(1) {
+        current = imu.get_heading();
+        error = wrapAngle(goal - current);
+        if (fabs(error) < 5) {
+            integral += error;
+        }
+        else if (fabs(error) < .5 || fabs(error) > 5) integral = 0;
+    
+    derivative = -(prevError - error);
+    float move = error * turnkP + integral * turnkI + derivative  * turnkD;
+    rmg.move(-move * (power/100));
+    lmg.move(move * (power/100));
+    if (fabs(error) < tolerance) {
+        complete ++;
+    }
+    else complete = 0;
+    if (paul.get_distance() < 400) {
+        turnplace = imu.get_heading();
+    }
+    if (complete == 5) break;
+    time += 20;
+    if (time >= timeout) break;
+    prevError = error;
+    pros::lcd::print(0,"angle %.2f", imu.get_heading());
+    pros::lcd::print(1,"error %.2f",error);
+    lift.move(liftPIDDR(liftgoal));
+    pros::delay(20);
+    }
+    rmg.move(0);
+    lmg.move(0);
+}
+void driveUntil(float goal, float power = 100, float timeout = 5000,float tolerance = .5) {
+    float error = goal,prevError = goal,derivative{}, integral{},time{},current{};
+    tare();
+    while(1) {
+        current = getAvInches();
+        error = goal - current;
+        if (fabs(error) < 5) {
+            integral += error;
+        }
+        else if (fabs(error) < .5 || fabs(error) > 5) integral = 0;
+    
+    derivative = -(prevError - error);
+    float move = error * dkP + integral * dkI + derivative  * dkD;
+    rmg.move(move * (power/100));
+    lmg.move(move * (power/100));
+    time += 20;
+    if (time >= timeout) break;
+    prevError = error;
+    lift.move(liftPIDDR(liftgoal));
+    pros::delay(20);
+    }
+    rmg.move(0);
+    lmg.move(0);
 }
 void driveToHeading(float dis, float angle, float power = 100, float timeout = 6000) {
     tare();
@@ -121,7 +218,6 @@ void initialize() {
 void disabled() {}
 
 void competition_initialize() {}
-float turnplace{};
 
 void autonomous() { //use 35 for turning to look for something
     liftgoal = 700;

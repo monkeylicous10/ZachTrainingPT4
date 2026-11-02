@@ -36,12 +36,12 @@ float vertdis = sqrt(12.89);
 //PID DRIVE CONST
 constexpr float dkP = 13;
 constexpr float dkI = .0f;
-constexpr float dkD = 60;
+constexpr float dkD = 1.2;
 
 //PID TURNING CONST
 constexpr float turnkP = .865;
-constexpr float turnkI = .005;
-constexpr float turnkD = 20;
+constexpr float turnkI = .0;
+constexpr float turnkD = .4;
 
 //POS
 float x{},y{};
