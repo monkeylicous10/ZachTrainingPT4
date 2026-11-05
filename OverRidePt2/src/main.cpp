@@ -298,7 +298,6 @@ void toggleTwice() {
     drive(-4,400);
     drive(4,400);
     drive(-4,400);
-
 }
 void toggle() {
     drive(4,400);

@@ -4,7 +4,6 @@
 #include "pros/misc.h"
 #include "pros/motors.h"
 #include <sys/types.h>
-
 pros::Controller roller (pros::E_CONTROLLER_MASTER);
 
 pros::MotorGroup lift({-21,2},pros::MotorGearset::green);
@@ -21,7 +20,7 @@ pros::Rotation hori (1);
 
 pros::Rotation vert (15);
 
-pros::Imu imu (14);
+pros::Imu ethan (14);
 
 pros::Distance paul (10);
 
@@ -31,12 +30,11 @@ lemlib::TrackingWheel lVert(&vert, lemlib::Omniwheel::NEW_2, sqrt(12.89));
 
 lemlib::Drivetrain driveTrain(&lmg,&rmg,13,lemlib::Omniwheel::NEW_325,450,2);
 
-lemlib::ControllerSettings straight(12,0,18,4,.5,
-    100,2,500,0);
+lemlib::ControllerSettings straight(12,0,18,4,.5,100,2,500,0);
 
 lemlib::ControllerSettings turnP(5,0,45,3,1,100,3,500,0);
 
-lemlib::OdomSensors sensors(&lVert, nullptr,&lHori,nullptr,&imu);
+lemlib::OdomSensors sensors(&lVert, nullptr,&lHori,nullptr,&ethan);
 
 lemlib::Chassis rob (driveTrain, straight, turnP, sensors);
 
@@ -72,7 +70,7 @@ void tare() {
 }
 float liftgoal{};
 float errora{},prevErrora{},integrala{},derivativea{},currenta = lift.get_position();
-float liftPIDDR (float goal) {
+float liftPIDDR (float goal = liftgoal) {
     errora = (goal) - currenta;
     currenta = lift.get_position();
     integrala += errora;
@@ -114,7 +112,7 @@ void turn(float goal, float power = 100, float timeout = 3000, float tolerance =
     float error = goal,prevError = goal,derivative{}, integral{},time{},current{},complete{};
     tare();
     while(1) {
-        current = imu.get_heading();
+        current = ethan.get_heading();
         error = wrapAngle(goal - current);
         if (fabs(error) < 5) {
             integral += error;
@@ -130,13 +128,13 @@ void turn(float goal, float power = 100, float timeout = 3000, float tolerance =
     }
     else complete = 0;
     if (paul.get_distance() < 400) {
-        turnplace = imu.get_heading();
+        turnplace = ethan.get_heading();
     }
     if (complete == 5) break;
     time += 20;
     if (time >= timeout) break;
     prevError = error;
-    pros::lcd::print(0,"angle %.2f", imu.get_heading());
+    pros::lcd::print(0,"angle %.2f", ethan.get_heading());
     pros::lcd::print(1,"error %.2f",error);
     lift.move(liftPIDDR(liftgoal));
     pros::delay(20);
@@ -170,10 +168,10 @@ void driveUntil(float goal, float power = 100, float timeout = 5000,float tolera
 }
 void driveToHeading(float dis, float angle, float power = 100, float timeout = 6000) {
     tare();
-    float dcurrent = getAvInches(),tcurrent = imu.get_heading(),derror = dis, terror = angle,dprevError = dis, tprevError = angle,dderivative{}, tderivative{},dintegral{},tintegral{},time{},complete{};
+    float dcurrent = getAvInches(),tcurrent = ethan.get_heading(),derror = dis, terror = angle,dprevError = dis, tprevError = angle,dderivative{}, tderivative{},dintegral{},tintegral{},time{},complete{};
     while(1) {
         dcurrent = getAvInches();
-        tcurrent = imu.get_heading();
+        tcurrent = ethan.get_heading();
         derror = dis - dcurrent;
         if (derror < 5) dintegral += derror;
         if (derror > 5 || dintegral < .5) dintegral = 0;
@@ -219,23 +217,70 @@ void disabled() {}
 
 void competition_initialize() {}
 
-void autonomous() { //use 35 for turning to look for something
-    liftgoal = 700;
-    rob.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    rob.turnToHeading(-135,1200,{.direction = lemlib::AngularDirection::CCW_COUNTERCLOCKWISE, .maxSpeed = 45}, true);
-    while (rob.isInMotion()) {
-        if (paul.get_distance() < 600) {
-            turnplace = imu.get_heading();
+void endonmatchload() {
+    drive(12,100);
+    turn(91,100,1300);
+    driveToHeading(12,turnplace,100,2000);
+    lift.move(-30);
+    pros::delay(600);
+    claw.toggle();
+    pros::delay(600);/*
+    drive(-6.25,100,1500);
+    turn(20,100,1000);
+    liftgoal = 0;
+    drive(13,100,4000);
+    while(1) {
+        lmg.move(27);
+        rmg.move(-27);
+        roller.print(0,0,"dis, %.2f",paul.get_distance());
+        if (paul.get_distance() < 550) {
+            break;
+        }
+    }
+    
+    liftgoal = 0;
+    rmg.move(0);
+    lmg.move(0);
+    drive(6,50,1000);
+    claw.toggle();
+    pros::delay(200);
+    liftgoal = 50;
+    turn(160,100,2000);
+    driveToHeading(10, turnplace);
+    lift.move(-20);
+    pros::delay(1000);
+    claw.toggle();*/
+}
+void eomltranslated() {
+    /*drive(4,400);
+    drive(-4,400);
+    drive(4,400);
+    drive(-4,400);*/
+    rob.setPose(0,0,0);
+    rob.arcade(30,22);
+    pros::delay(1100);
+    rob.turnToHeading(90,400);
+    roller.print(0,0,"x %.2f,%.2f",rob.getPose().x,rob.getPose().y);
+    lift.move(-30);
+    pros::delay(600);
+    pros::delay(600);
+    liftgoal = 0;
+    rob.moveToPoint(8,18,3000,{.forwards = false},false);
+    rob.moveToPoint(14,22,9000);
+    rob.turnToHeading(90,1000,{.maxSpeed = 35},true);
+    while(rob.isInMotion()) {
+        if (paul.get_distance() < 400) {
             rob.cancelMotion();
         }
     }
-    driveToHeading(4, turnplace);
-    roller.print(0,0,"id %.2f", turnplace);
+}
+void autonomous() { //use 35 for turning to look for something
+    eomltranslated();
 }
 float errorb{},integralb{},derivativeb{},prevErrorb{};
 float antitip() {
 	if (fabs(integralb) < 20) {
-	errorb = -imu.get_roll();
+	errorb = -ethan.get_roll();
 	integralb += errorb;
 	}
 	else integralb = 0;
@@ -280,7 +325,7 @@ rob.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
         if (!roller.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && !roller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
             lift.move(liftPIDDR(place));
         }
-        if ((fabs(imu.get_roll()) > 10)) {
+        if ((fabs(ethan.get_roll()) > 10)) {
             lift.move(-60);
         }
         pros::lcd::print(0, "X: %f", rob.getPose().x);
