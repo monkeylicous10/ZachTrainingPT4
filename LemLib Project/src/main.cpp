@@ -6,21 +6,21 @@
 #include <sys/types.h>
 pros::Controller roller (pros::E_CONTROLLER_MASTER);
 
-pros::MotorGroup lift({-21,2},pros::MotorGearset::green);
+pros::MotorGroup lift({-21,4},pros::MotorGearset::green);
 
 pros::MotorGroup rmg ({18,19,20}, pros::MotorGearset::blue);
 
-pros::MotorGroup lmg ({-11,-12,-13}, pros::MotorGearset::blue);
+pros::MotorGroup lmg ({-13,-14,-15}, pros::MotorGearset::blue);
 
 pros::adi::Pneumatics claw ('A', false);
 
 pros::adi::Pneumatics tilt ('B',false);
 
-pros::Rotation hori (1);
+pros::Rotation hori (3);
 
-pros::Rotation vert (15);
+pros::Rotation vert (17);
 
-pros::Imu ethan (14);
+pros::Imu ethan (16);
 
 pros::Distance paul (10);
 
@@ -350,8 +350,8 @@ rob.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
         pros::lcd::print(1, "Y: %f", rob.getPose().y);
         pros::lcd::print(2, "Theta: %f", rob.getPose().theta);
         pros::delay(20);
-	rmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y)) + antitip());
-	lmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)) + antitip());
+	rmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y)));
+	lmg.move(curve(roller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y)));
 	pros::delay(20);
 	}
 }
