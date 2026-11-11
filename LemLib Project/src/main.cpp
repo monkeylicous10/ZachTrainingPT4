@@ -28,7 +28,7 @@ lemlib::TrackingWheel lHori(&hori, lemlib::Omniwheel::NEW_2, sqrt(3.94));
 
 lemlib::TrackingWheel lVert(&vert, lemlib::Omniwheel::NEW_2, sqrt(12.89));
 
-lemlib::Drivetrain driveTrain(&lmg,&rmg,13,lemlib::Omniwheel::NEW_325,450,2);
+lemlib::Drivetrain driveTrain(&lmg,&rmg,11.5,lemlib::Omniwheel::NEW_325,450,2);
 
 lemlib::ControllerSettings straight(12,0,18,4,.5,100,2,500,0);
 
@@ -56,7 +56,12 @@ float wrapAngle(float angle) {
 float getLeftInches() {
     return lmg.get_position()/450 * (M_PI * 3.25);
 }
-
+float dtr(float angle) {
+    return angle * (M_PI/180);
+}
+float rtd(float angle) {
+    return angle * (180/M_PI);
+}
 float getRightInches() {
     return rmg.get_position()/450 * (M_PI * 3.25);
 }
@@ -67,6 +72,14 @@ float getAvInches() {
 void tare() {
     rmg.tare_position();
     lmg.tare_position();
+}
+float xChange(float dis) {
+    float s = dtr(ethan.get_heading());
+    return sin(s)*dis;
+}
+float yChange(float dis) {
+    float s = dtr(wrapAngle(ethan.get_heading()));
+    return cos(s)*dis;
 }
 float liftgoal{};
 float errora{},prevErrora{},integrala{},derivativea{},currenta = lift.get_position();
@@ -212,7 +225,6 @@ void initialize() {
 	rob.calibrate();
 	pros::lcd::register_btn1_cb(on_center_button);
 }
-
 void disabled() {}
 
 void competition_initialize() {}
@@ -261,20 +273,26 @@ void eomltranslated() {
     pros::delay(1100);
     rob.turnToHeading(90,400);
     roller.print(0,0,"x %.2f,%.2f",rob.getPose().x,rob.getPose().y);
-    lift.move(-30);
     pros::delay(600);
     pros::delay(600);
     liftgoal = 0;
     rob.moveToPoint(8,18,3000,{.forwards = false},false);
-    rob.moveToPoint(14,22,9000);
+    rob.turnToPoint(17,40,750);
+    rob.moveToPoint(10,32,1200,{.maxSpeed = 40}, false);
     rob.turnToHeading(90,1000,{.maxSpeed = 35},true);
     while(rob.isInMotion()) {
         if (paul.get_distance() < 400) {
             rob.cancelMotion();
         }
     }
+    while (paul.get_distance() > 120) {
+        rob.arcade(30,0);
+    }
+    rob.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+    rob.arcade(0,0);
 }
 void autonomous() { //use 35 for turning to look for something
+    rob.moveToPoint(xChange(23), yChange(23), 1000);
     eomltranslated();
 }
 float errorb{},integralb{},derivativeb{},prevErrorb{};
