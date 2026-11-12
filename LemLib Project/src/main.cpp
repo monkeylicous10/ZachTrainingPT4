@@ -6,23 +6,23 @@
 #include <sys/types.h>
 pros::Controller roller (pros::E_CONTROLLER_MASTER);
 
-pros::MotorGroup lift({-21,4},pros::MotorGearset::green);
+pros::MotorGroup lift({19,-4},pros::MotorGearset::green);
 
-pros::MotorGroup rmg ({18,19,20}, pros::MotorGearset::blue);
+pros::MotorGroup rmg ({3,7,10}, pros::MotorGearset::blue);
 
-pros::MotorGroup lmg ({-13,-14,-15}, pros::MotorGearset::blue);
+pros::MotorGroup lmg ({-11,-5,-6}, pros::MotorGearset::blue);
 
 pros::adi::Pneumatics claw ('A', false);
 
 pros::adi::Pneumatics tilt ('B',false);
 
-pros::Rotation hori (3);
+pros::Rotation hori (20);
 
-pros::Rotation vert (17);
+pros::Rotation vert (2);
 
-pros::Imu ethan (16);
+pros::Imu ethan (8);
 
-pros::Distance paul (10);
+pros::Distance paul (9);
 
 lemlib::TrackingWheel lHori(&hori, lemlib::Omniwheel::NEW_2, sqrt(3.94));
 
