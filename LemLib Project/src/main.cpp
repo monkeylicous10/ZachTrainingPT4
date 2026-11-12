@@ -6,9 +6,9 @@
 #include <sys/types.h>
 pros::Controller roller (pros::E_CONTROLLER_MASTER);
 
-pros::MotorGroup lift({19,-4},pros::MotorGearset::green);
+pros::MotorGroup lift({12,-4},pros::MotorGearset::green);
 
-pros::MotorGroup rmg ({3,7,10}, pros::MotorGearset::blue);
+pros::MotorGroup rmg ({2,3,7}, pros::MotorGearset::blue);
 
 pros::MotorGroup lmg ({-11,-5,-6}, pros::MotorGearset::blue);
 
@@ -18,7 +18,7 @@ pros::adi::Pneumatics tilt ('B',false);
 
 pros::Rotation hori (20);
 
-pros::Rotation vert (2);
+pros::Rotation vert (1);
 
 pros::Imu ethan (8);
 
@@ -342,10 +342,10 @@ rob.setBrakeMode(pros::E_MOTOR_BRAKE_COAST);
         }
         if (!roller.get_digital(pros::E_CONTROLLER_DIGITAL_L1) && !roller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) {
             lift.move(liftPIDDR(place));
-        }
+        }/*
         if ((fabs(ethan.get_roll()) > 10)) {
             lift.move(-60);
-        }
+        }*/
         pros::lcd::print(0, "X: %f", rob.getPose().x);
         pros::lcd::print(1, "Y: %f", rob.getPose().y);
         pros::lcd::print(2, "Theta: %f", rob.getPose().theta);
