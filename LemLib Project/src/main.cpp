@@ -8,7 +8,7 @@ pros::Controller roller (pros::E_CONTROLLER_MASTER);
 
 pros::MotorGroup lift({12,-4},pros::MotorGearset::green);
 
-pros::MotorGroup rmg ({2,3,7}, pros::MotorGearset::blue);
+pros::MotorGroup rmg ({19,3,7}, pros::MotorGearset::blue);
 
 pros::MotorGroup lmg ({-11,-5,-6}, pros::MotorGearset::blue);
 
@@ -18,7 +18,7 @@ pros::adi::Pneumatics tilt ('B',false);
 
 pros::Rotation hori (20);
 
-pros::Rotation vert (1);
+pros::Rotation vert (2);
 
 pros::Imu ethan (8);
 
@@ -264,17 +264,21 @@ void endonmatchload() {
     claw.toggle();*/
 }
 void eomltranslated() {
-    /*drive(4,400);
-    drive(-4,400);
-    drive(4,400);
-    drive(-4,400);*/
     rob.setPose(0,0,0);
+    liftgoal = 200;
+    tilt.toggle();
+    drive(4,400,750);
+    drive(-4,400,750);
+    drive(4,400,750);
+    drive(-4,400,750);
     rob.arcade(30,22);
     pros::delay(1100);
     rob.turnToHeading(90,400);
     roller.print(0,0,"x %.2f,%.2f",rob.getPose().x,rob.getPose().y);
     pros::delay(600);
+    lift.move(-30);
     pros::delay(600);
+    claw.toggle();
     liftgoal = 0;
     rob.moveToPoint(8,18,3000,{.forwards = false},false);
     rob.turnToPoint(17,40,750);
@@ -288,11 +292,11 @@ void eomltranslated() {
     while (paul.get_distance() > 120) {
         rob.arcade(30,0);
     }
+    claw.toggle();
     rob.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
     rob.arcade(0,0);
 }
 void autonomous() { //use 35 for turning to look for something
-    rob.moveToPoint(xChange(23), yChange(23), 1000);
     eomltranslated();
 }
 float errorb{},integralb{},derivativeb{},prevErrorb{};
