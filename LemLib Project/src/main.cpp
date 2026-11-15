@@ -265,15 +265,16 @@ void endonmatchload() {
 }
 void eomltranslated() {
     rob.setPose(0,0,0);
-    liftgoal = 200;
+    liftgoal = 400;
+    drive(4,200,750);
+    drive(-4,200,750);
     tilt.toggle();
-    drive(4,400,750);
-    drive(-4,400,750);
-    drive(4,400,750);
-    drive(-4,400,750);
+    drive(4,200,750);
+    driveUntil(-5,200,1200);
     rob.arcade(30,22);
     pros::delay(1100);
     rob.turnToHeading(90,400);
+    rob.tank(10,10);
     roller.print(0,0,"x %.2f,%.2f",rob.getPose().x,rob.getPose().y);
     pros::delay(600);
     lift.move(-30);
@@ -282,7 +283,8 @@ void eomltranslated() {
     liftgoal = 0;
     rob.moveToPoint(8,18,3000,{.forwards = false},false);
     rob.turnToPoint(17,40,750);
-    rob.moveToPoint(10,32,1200,{.maxSpeed = 40}, false);
+    rob.moveToPoint(10,32,1200,{.maxSpeed = 40}, true);
+    lift.move(liftPIDDR(liftgoal));
     rob.turnToHeading(90,1000,{.maxSpeed = 35},true);
     while(rob.isInMotion()) {
         if (paul.get_distance() < 400) {
@@ -293,8 +295,9 @@ void eomltranslated() {
         rob.arcade(30,0);
     }
     claw.toggle();
-    rob.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-    rob.arcade(0,0);
+    pros::delay(100);
+    //turn to 180 while looking for next goal
+
 }
 void autonomous() { //use 35 for turning to look for something
     eomltranslated();
