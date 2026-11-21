@@ -16,13 +16,13 @@ pros::adi::Pneumatics claw ('A', false);
 
 pros::adi::Pneumatics tilt ('B',false);
 
-pros::Rotation hori (20);
+pros::Rotation hori (9);
 
 pros::Rotation vert (2);
 
 pros::Imu ethan (8);
 
-pros::Distance paul (9);
+pros::Distance paul (20);
 
 lemlib::TrackingWheel lHori(&hori, lemlib::Omniwheel::NEW_2, sqrt(3.94));
 
@@ -228,7 +228,7 @@ void initialize() {
 void disabled() {}
 
 void competition_initialize() {}
-
+float turnplace1{};
 void endonmatchload() {
     drive(12,100);
     turn(91,100,1300);
@@ -265,41 +265,67 @@ void endonmatchload() {
 }
 void eomltranslated() {
     rob.setPose(0,0,0);
-    liftgoal = 400;
-    drive(4,200,750);
-    drive(-4,200,750);
+    lift.move(127);
+    pros::delay(100);
     tilt.toggle();
-    drive(4,200,750);
-    driveUntil(-5,200,1200);
-    rob.arcade(30,22);
-    pros::delay(1100);
-    rob.turnToHeading(90,400);
-    rob.tank(10,10);
-    roller.print(0,0,"x %.2f,%.2f",rob.getPose().x,rob.getPose().y);
+    lift.move(-20);
+    pros::delay(500);
+    rob.moveToPoint(0,15.5,1300,{.maxSpeed = 50},true);
+    pros::delay(700);
+    while (rob.isInMotion()) {
+        lift.move(liftPIDDR(liftgoal));
+    }
+    rob.turnToHeading(90,222222,{.maxSpeed = 40},true);
+    while (rob.isInMotion()) {
+        if (paul.get_distance() < 400) {
+        turnplace1 = ethan.get_heading();
+        rob.cancelAllMotions();
+        }
+    }
+    driveToHeading(6, turnplace1,75,1500);
+    drive(-1,90,750);
     pros::delay(600);
     lift.move(-30);
-    pros::delay(600);
     claw.toggle();
+    pros::delay(600);
     liftgoal = 0;
-    rob.moveToPoint(8,18,3000,{.forwards = false},false);
+    //scores preload
+    rob.moveToPoint(6,18,3000,{.forwards = false},false);
     rob.turnToPoint(17,40,750);
-    rob.moveToPoint(10,32,1200,{.maxSpeed = 40}, true);
-    lift.move(liftPIDDR(liftgoal));
-    rob.turnToHeading(90,1000,{.maxSpeed = 35},true);
+    rob.moveToPoint(8,32,1200,{.maxSpeed = 80}, false);
+    rob.turnToHeading(70,1400,{.maxSpeed = 30},true);
     while(rob.isInMotion()) {
         if (paul.get_distance() < 400) {
+            turnplace1 = ethan.get_heading();
             rob.cancelMotion();
         }
     }
     while (paul.get_distance() > 120) {
         rob.arcade(30,0);
     }
+    rob.arcade(0,20);
     claw.toggle();
+    liftgoal = 300;
+    while (fabs(errora) > 40) {
+        lift.move(liftPIDDR(liftgoal) * 8);
+    }
     pros::delay(100);
+    rob.turnToHeading(180, 750,{.maxSpeed = 30}, true);
+    while (rob.isInMotion()) {
+        if (paul.get_distance() < 600) {
+            turnplace1 = ethan.get_heading();
+            break;
+        }
+    }
     //turn to 180 while looking for next goal
 
 }
 void autonomous() { //use 35 for turning to look for something
+    liftgoal = 500;
+    while(fabs(errora) > 40) {
+        lift.move(liftPIDDR(liftgoal));
+    }
+    pros::delay(555555);
     eomltranslated();
 }
 float errorb{},integralb{},derivativeb{},prevErrorb{};
