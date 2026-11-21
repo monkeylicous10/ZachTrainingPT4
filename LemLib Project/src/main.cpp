@@ -264,6 +264,7 @@ void endonmatchload() {
     claw.toggle();*/
 }
 void eomltranslated() {
+    liftgoal = 0;
     rob.setPose(0,0,0);
     lift.move(127);
     pros::delay(100);
@@ -293,22 +294,23 @@ void eomltranslated() {
     rob.moveToPoint(6,18,3000,{.forwards = false},false);
     rob.turnToPoint(17,40,750);
     rob.moveToPoint(8,32,1200,{.maxSpeed = 80}, false);
-    rob.turnToHeading(70,1400,{.maxSpeed = 30},true);
+    rob.turnToHeading(70,1400,{.maxSpeed = 26},true);
     while(rob.isInMotion()) {
         if (paul.get_distance() < 400) {
             turnplace1 = ethan.get_heading();
             rob.cancelMotion();
         }
     }
-    while (paul.get_distance() > 120) {
+    while (paul.get_distance() > 80) {
         rob.arcade(30,0);
     }
     rob.arcade(0,20);
     claw.toggle();
     liftgoal = 300;
     while (fabs(errora) > 40) {
-        lift.move(liftPIDDR(liftgoal) * 8);
+        lift.move(liftPIDDR(liftgoal));
     }
+    lift.move(0);
     pros::delay(100);
     rob.turnToHeading(180, 750,{.maxSpeed = 30}, true);
     while (rob.isInMotion()) {
@@ -321,11 +323,6 @@ void eomltranslated() {
 
 }
 void autonomous() { //use 35 for turning to look for something
-    liftgoal = 500;
-    while(fabs(errora) > 40) {
-        lift.move(liftPIDDR(liftgoal));
-    }
-    pros::delay(555555);
     eomltranslated();
 }
 float errorb{},integralb{},derivativeb{},prevErrorb{};
